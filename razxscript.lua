@@ -1,27 +1,30 @@
+loadstring([[
 --// Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
 
---// Variables
+-- Variables
 local UIS = UserInputService
 local flying = false
 local flySpeed = 50
 local walkSpeed = 16
 local noclipActive = false
 local infJumpActive = false
+local speedActive = false
+local flyActive = false
+local minimized = false
 
---// Create UI
+-- Create UI
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Size = UDim2.new(0, 250, 0, 250)
 mainFrame.Position = UDim2.new(0, 100, 0, 100)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
@@ -37,6 +40,26 @@ closeBtn.TextColor3 = Color3.new(1,1,1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(80,80,80)
 closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+end)
+
+-- Minimize button (logo R)
+local minBtn = Instance.new("TextButton", mainFrame)
+minBtn.Size = UDim2.new(0, 25, 0, 25)
+minBtn.Position = UDim2.new(1, -60, 0, 5)
+minBtn.Text = "R"
+minBtn.TextColor3 = Color3.new(1,1,1)
+minBtn.BackgroundColor3 = Color3.fromRGB(80,80,80)
+
+minBtn.MouseButton1Click:Connect(function()
+    if minimized then
+        -- restore frame
+        mainFrame.Size = UDim2.new(0, 250, 0, 250)
+        minimized = false
+    else
+        -- minimize frame
+        mainFrame.Size = UDim2.new(0, 40, 0, 40)
+        minimized = true
+    end
 end)
 
 -- Function to create toggle
@@ -59,10 +82,10 @@ local function createToggle(name, pos)
     toggle.Position = UDim2.new(1, -25, 0.5, -10)
     toggle.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
     toggle.Text = ""
-    local active = false
+    toggle.Active = false
     toggle.MouseButton1Click:Connect(function()
-        active = not active
-        toggle.BackgroundColor3 = active and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(120,120,120)
+        toggle.Active = not toggle.Active
+        toggle.BackgroundColor3 = toggle.Active and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(120,120,120)
     end)
     return toggle
 end
@@ -93,14 +116,10 @@ local function createSlider(name, pos, min, max, default)
 
     local dragging = false
     handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
     end)
     handle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     UIS.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -108,45 +127,77 @@ local function createSlider(name, pos, min, max, default)
             handle.Size = UDim2.new(posX/slider.AbsoluteSize.X,0,1,0)
             local value = min + (posX/slider.AbsoluteSize.X)*(max-min)
             label.Text = name..": "..math.floor(value)
-            if name == "Speed" then
-                walkSpeed = value
-            elseif name == "Fly" then
-                flySpeed = value
-            end
         end
     end)
+    return slider, handle
 end
 
--- Create Toggles
-local noclipToggle = createToggle("Noclip", UDim2.new(0, 10, 0, 40))
-local infJumpToggle = createToggle("Inf Jump", UDim2.new(0, 10, 0, 80))
+-- Create toggles
+local noclipToggle = createToggle("Noclip", UDim2.new(0,10,0,40))
+local infJumpToggle = createToggle("Inf Jump", UDim2.new(0,10,0,80))
+local speedToggle = createToggle("Speed ON", UDim2.new(0,10,0,120))
+local flyToggle = createToggle("Fly ON", UDim2.new(0,10,0,160))
 
--- Create Sliders
-createSlider("Speed", UDim2.new(0, 10, 0, 120), 16, 200, 50)
-createSlider("Fly", UDim2.new(0, 10, 0, 160), 10, 100, 50)
+-- Create sliders
+local speedSlider, speedHandle = createSlider("Speed", UDim2.new(0,10,0,140),16,200,50)
+local flySlider, flyHandle = createSlider("Fly", UDim2.new(0,10,0,180),10,100,50)
 
---// Functionality
+-- Variables for sliders
+local currentSpeed = 50
+local currentFlySpeed = 50
 
--- Noclip
+-- Fly variables
+local bodyVelocity, bodyGyro
+
 RunService.RenderStepped:Connect(function()
-    if noclipToggle.BackgroundColor3 == Color3.fromRGB(0,255,0) then
+    -- Noclip
+    if noclipToggle.Active then
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     else
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
+            if part:IsA("BasePart") then part.CanCollide = true end
+        end
+    end
+
+    -- Infinite Jump
+    if infJumpToggle.Active then humanoid.JumpPower = 50 end
+
+    -- Update sliders
+    local speedX = speedHandle.Size.X.Scale
+    local flyX = flyHandle.Size.X.Scale
+    currentSpeed = 16 + (200-16)*speedX
+    currentFlySpeed = 10 + (100-10)*flyX
+
+    -- Apply Speed
+    if speedToggle.Active then humanoid.WalkSpeed = currentSpeed else humanoid.WalkSpeed = 16 end
+
+    -- Fly
+    if flyToggle.Active then
+        if not flying then
+            flying = true
+            bodyVelocity = Instance.new("BodyVelocity", root)
+            bodyGyro = Instance.new("BodyGyro", root)
+            bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+            bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
+        end
+        local direction = Vector3.new(0,0,0)
+        if UIS:IsKeyDown(Enum.KeyCode.W) then direction = direction + workspace.CurrentCamera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then direction = direction - workspace.CurrentCamera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then direction = direction - workspace.CurrentCamera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then direction = direction + workspace.CurrentCamera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0,1,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0,1,0) end
+        if direction.Magnitude > 0 then direction = direction.Unit end
+        bodyVelocity.Velocity = direction * currentFlySpeed
+        bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+    else
+        if flying then
+            flying = false
+            if bodyVelocity then bodyVelocity:Destroy() end
+            if bodyGyro then bodyGyro:Destroy() end
         end
     end
 end)
-
--- Inf Jump
-UIS.JumpRequest:Connect(function()
-    if infJumpToggle.BackgroundColor3 == Color3.fromRGB(0,255,0) then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
+]])()
