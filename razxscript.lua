@@ -1,7 +1,7 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v4" 
+local scriptIdentifier = "razxHub_Final" 
 
--- Cek script lama, matikan jika ada
+-- Cek script lama
 if _G[scriptIdentifier] then
     _G[scriptIdentifier]:Disconnect()
     _G[scriptIdentifier] = nil
@@ -15,7 +15,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser") -- Untuk Instan Hold
+local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -23,6 +23,7 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
+local lastClickTime = 0 -- Untuk membatasi spam klik
 
 -- Fungsi Anti-Reset
 local function getChar()
@@ -43,14 +44,14 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame (Diperbesar agar muat semua fitur)
+-- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 470) -- Tinggi jadi 470
+mainFrame.Size = UDim2.new(0, 280, 0, 470)
 mainFrame.Position = UDim2.new(0.5, -140, 0.5, -235)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true -- Pastikan drag aktif selalu
+mainFrame.Active = true -- SELALU AKTIF BISA DIGESER
+mainFrame.Draggable = true 
 
 -- Judul
 local title = Instance.new("TextLabel", mainFrame)
@@ -62,7 +63,7 @@ title.TextSize = 22
 title.Font = Enum.Font.GothamBold
 title.ZIndex = 2
 
--- Tombol Close (X) -> MEMATIKAN SEMUA SCRIPT (Termasuk Chibi)
+-- Tombol Close (X)
 local closeBtn = Instance.new("TextButton", mainFrame)
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -76,7 +77,6 @@ closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
 closeBtn.MouseButton1Click:Connect(function()
-    -- Matikan Script Total (Maka Avatar Chibi akan hilang karena script berhenti)
     if _G[scriptIdentifier] then
         _G[scriptIdentifier]:Disconnect()
         _G[scriptIdentifier] = nil
@@ -97,7 +97,7 @@ minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
--- Logo R (Background Logo) -> Bisa Diklik & Digeser
+-- Logo R (Hanya cover visual, Active=false agar bisa drag parentnya)
 local rLogoFrame = Instance.new("TextButton", mainFrame)
 rLogoFrame.Size = UDim2.new(1, 0, 1, 0)
 rLogoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -106,6 +106,7 @@ rLogoFrame.ZIndex = 1
 rLogoFrame.BorderSizePixel = 0
 rLogoFrame.Text = ""
 rLogoFrame.AutoButtonColor = false
+rLogoFrame.Active = false -- FIX: Agar Input Mouse diteruskan ke mainFrame (Draggable)
 rLogoFrame.Parent = mainFrame
 
 local rLogoLabel = Instance.new("TextLabel", rLogoFrame)
@@ -119,7 +120,7 @@ rLogoLabel.ZIndex = 2
 rLogoLabel.TextXAlignment = Enum.TextXAlignment.Center
 rLogoLabel.TextYAlignment = Enum.TextYAlignment.Center
 
--- Konten (Fitur)
+-- Konten
 local contentFrame = Instance.new("Frame", mainFrame)
 contentFrame.Size = UDim2.new(1, 0, 1, -40)
 contentFrame.Position = UDim2.new(0, 0, 0, 40)
@@ -130,7 +131,6 @@ contentFrame.ZIndex = 2
 local function setMinimize(isMinimized)
     minimized = isMinimized
     if minimized then
-        -- Efek Mengecil (40x40)
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 40, 0, 40)}):Play()
         title.Visible = false
         closeBtn.Visible = false
@@ -139,7 +139,6 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        -- Efek Membuka
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 470)}):Play()
         title.Visible = true
         closeBtn.Visible = true
@@ -253,7 +252,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal)
     }
 end
 
--- Membuat Toggles (Posisi disesuaikan)
+-- Buat Toggles
 local noclipToggle = createToggle("Noclip", 10)
 local infJumpToggle = createToggle("Inf Jump", 50)
 local speedToggle = createToggle("Speed", 90)
@@ -261,19 +260,17 @@ local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
 
--- Membuat Sliders (Posisi diturunkan agar tidak menutupi)
+-- Buat Sliders
 local speedSlider = createSlider("Speed", 260, 16, 500, 50)
 local flySlider = createSlider("Fly Speed", 320, 10, 500, 50) 
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
     if chibiToggle.Active then 
-        -- Mematikan
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        player:LoadCharacter() -- Reset karakter
+        player:LoadCharacter() 
     else
-        -- Menghidupkan
         chibiToggle.Active = true
         chibiToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         pcall(function()
@@ -298,7 +295,7 @@ end)
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
 
-    -- Noclip Logic
+    -- Noclip
     if noclipToggle.Active then
         for _, part in pairs(character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
@@ -309,21 +306,21 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Inf Jump Logic
+    -- Inf Jump
     if infJumpToggle.Active then
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 
-    -- Speed Logic
+    -- Speed
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
     else
         humanoid.WalkSpeed = 16
     end
 
-    -- Fly Logic
+    -- Fly
     if flyToggle.Active then
         if not flying then
             flying = true
@@ -358,12 +355,15 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Instan Hold Logic (Perbaikan dengan VirtualUser)
+    -- Instan Hold (Dibatasi kecepatannya agar tidak crash)
     if holdToggle.Active then
         if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-            -- Menggunakan VirtualUser untuk spam klik yang lebih efektif
-            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            -- Batasi spam klik (setiap 0.05 detik)
+            if tick() - lastClickTime > 0.05 then 
+                VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                lastClickTime = tick()
+            end
         end
     end
 end)
