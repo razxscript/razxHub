@@ -1,13 +1,15 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v10_FixMove" 
+local scriptIdentifier = "razxHub_v11_FinalFix" 
+local player = game.Players.LocalPlayer
 
--- Cek script lama
+-- PAKSA BERSIHKAN LAMA AGAR BISA RE-EXECUTE
+local oldGui = player.PlayerGui:FindFirstChild("razxHub")
+if oldGui then 
+    oldGui:Destroy() 
+end
 if _G[scriptIdentifier] then
     _G[scriptIdentifier]:Disconnect()
     _G[scriptIdentifier] = nil
-    local oldUI = game.Players.LocalPlayer.PlayerGui:FindFirstChild("razxHub")
-    if oldUI then oldUI:Destroy() end
-    return
 end
 
 --// Services
@@ -17,7 +19,6 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
-local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local character, humanoid, root
 local flying = false
@@ -76,10 +77,8 @@ closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
 closeBtn.MouseButton1Click:Connect(function()
-    if _G[scriptIdentifier] then
-        _G[scriptIdentifier]:Disconnect()
-        _G[scriptIdentifier] = nil
-    end
+    _G[scriptIdentifier]:Disconnect()
+    _G[scriptIdentifier] = nil
     screenGui:Destroy()
 end)
 
@@ -336,13 +335,13 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Speed (MOVEMENT FIX)
+    -- Speed (FIX: Mengapung & Ngesot)
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
-        humanoid.HipHeight = 3.5 -- FIX: Menaikkan kaki agar tidak tersandung tangga/part kecil
+        humanoid.MaxSlopeAngle = 89 -- FIX: Bisa naik tangga/part kecil tanpa mengapung
     else
         humanoid.WalkSpeed = 16
-        humanoid.HipHeight = 0 -- Reset tinggi kaki ke normal
+        humanoid.MaxSlopeAngle = 0 -- Reset fisika normal
     end
 
     -- Fly
