@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v5" 
+local scriptIdentifier = "razxHub_v6_Fixed" 
 
 -- Cek script lama
 if _G[scriptIdentifier] then
@@ -15,7 +15,6 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
@@ -106,7 +105,7 @@ rLogoFrame.ZIndex = 1
 rLogoFrame.BorderSizePixel = 0
 rLogoFrame.Text = ""
 rLogoFrame.AutoButtonColor = false
-rLogoFrame.Active = false -- Fix Agar tidak berantakan saat di drag
+rLogoFrame.Active = false 
 rLogoFrame.Parent = mainFrame
 
 local rLogoLabel = Instance.new("TextLabel", rLogoFrame)
@@ -279,6 +278,31 @@ chibiToggle.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Logic Instan Hold (FIXED ANTI-LOG)
+-- Fungsi ini hanya jalan SAAT tombol diklik (bukan tiap frame)
+local function applyPrompts()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            v.HoldDuration = 0
+        end
+    end
+end
+
+-- Event ini mendeteksi item BARU yang muncul, jadi otomatis jadi instan tanpa cek ulang
+Workspace.DescendantAdded:Connect(function(desc)
+    if holdToggle.Active and desc:IsA("ProximityPrompt") then
+        desc.HoldDuration = 0
+    end
+end)
+
+holdToggle.MouseButton1Click:Connect(function()
+    -- Klik di sini sudah menghandle visual di createToggle, 
+    -- tapi kita tambahkan logika khusus di sini
+    if not holdToggle.Active then -- Jika baru dinyalakan (False -> True)
+        applyPrompts() -- Cek map sekali saja
+    end
+end)
+
 -- Anti-Reset Logic
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
@@ -289,24 +313,13 @@ player.CharacterAdded:Connect(function(newChar)
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end
-end)
-
--- Logic Instan Hold (ProximityPrompt Bypass)
-local function setPromptsInstant()
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("ProximityPrompt") then
-            v.HoldDuration = 0
-        end
-    end
-end
-
-Workspace.DescendantAdded:Connect(function(desc)
-    if holdToggle.Active and desc:IsA("ProximityPrompt") then
-        desc.HoldDuration = 0
+    -- Re-apply prompts saat respawn jika fitur aktif
+    if holdToggle.Active then
+        applyPrompts()
     end
 end)
 
--- Main Loop
+-- Main Loop (BERSIH DARI LOOP BERAT)
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
 
@@ -368,11 +381,6 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
             if bodyGyro then bodyGyro:Destroy() end
             root.Velocity = Vector3.new(0,0,0)
         end
-    end
-    
-    -- Instan Hold Logic Loop (Pastikan tetap 0)
-    if holdToggle.Active then
-        setPromptsInstant()
     end
 end)
 ]])()
