@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v3" 
+local scriptIdentifier = "razxHub_v4" 
 
 -- Cek script lama, matikan jika ada
 if _G[scriptIdentifier] then
@@ -15,9 +15,10 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser") -- Untuk Instan Hold
 
 local player = Players.LocalPlayer
-local mouse = player:GetMouse() -- Untuk fitur Instan Hold
+local mouse = player:GetMouse()
 local character, humanoid, root
 local flying = false
 local minimized = false
@@ -42,14 +43,14 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame
+-- Main Frame (Diperbesar agar muat semua fitur)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 380) -- Diperbesar sedikit karena ada fitur baru
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -190)
+mainFrame.Size = UDim2.new(0, 280, 0, 470) -- Tinggi jadi 470
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -235)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true
+mainFrame.Draggable = true -- Pastikan drag aktif selalu
 
 -- Judul
 local title = Instance.new("TextLabel", mainFrame)
@@ -61,7 +62,7 @@ title.TextSize = 22
 title.Font = Enum.Font.GothamBold
 title.ZIndex = 2
 
--- Tombol Close (X)
+-- Tombol Close (X) -> MEMATIKAN SEMUA SCRIPT (Termasuk Chibi)
 local closeBtn = Instance.new("TextButton", mainFrame)
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -75,6 +76,7 @@ closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
 closeBtn.MouseButton1Click:Connect(function()
+    -- Matikan Script Total (Maka Avatar Chibi akan hilang karena script berhenti)
     if _G[scriptIdentifier] then
         _G[scriptIdentifier]:Disconnect()
         _G[scriptIdentifier] = nil
@@ -95,7 +97,7 @@ minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
--- Logo R (Background Logo)
+-- Logo R (Background Logo) -> Bisa Diklik & Digeser
 local rLogoFrame = Instance.new("TextButton", mainFrame)
 rLogoFrame.Size = UDim2.new(1, 0, 1, 0)
 rLogoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -128,6 +130,7 @@ contentFrame.ZIndex = 2
 local function setMinimize(isMinimized)
     minimized = isMinimized
     if minimized then
+        -- Efek Mengecil (40x40)
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 40, 0, 40)}):Play()
         title.Visible = false
         closeBtn.Visible = false
@@ -136,7 +139,8 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 380)}):Play()
+        -- Efek Membuka
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 470)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -257,23 +261,21 @@ local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
 
--- Membuat Sliders (Posisi diturunkan)
-local speedSlider = createSlider("Speed", 250, 16, 500, 50)
-local flySlider = createSlider("Fly Speed", 310, 10, 500, 50) 
+-- Membuat Sliders (Posisi diturunkan agar tidak menutupi)
+local speedSlider = createSlider("Speed", 260, 16, 500, 50)
+local flySlider = createSlider("Fly Speed", 320, 10, 500, 50) 
 
--- Logic Avatar Chibi (Bisa di ON/OFF)
+-- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
-    if chibiToggle.Active then -- Saat dimatikan manual (logic reverse karena di atas diklik dulu baru ganti active)
+    if chibiToggle.Active then 
         -- Mematikan
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        -- Reset karakter untuk menghilangkan efek chibi
-        player:LoadCharacter() 
+        player:LoadCharacter() -- Reset karakter
     else
         -- Menghidupkan
         chibiToggle.Active = true
         chibiToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        -- Jalankan Script Chibi
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/SmilerVinix/ChibiScript/adf59dcdf5015c3fca08a897b026151ab66dcd59/CHIBIOBFUSICATED"))(true)
         end)
@@ -286,7 +288,6 @@ player.CharacterAdded:Connect(function(newChar)
     humanoid = newChar:WaitForChild("Humanoid")
     root = newChar:WaitForChild("HumanoidRootPart")
     flying = false
-    -- Saat reset, matikan toggle chibi agar tidak bug (opsional, tapi disarankan)
     if chibiToggle.Active then
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -357,10 +358,12 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Instan Hold Logic (Spam Click saat mouse ditekan)
+    -- Instan Hold Logic (Perbaikan dengan VirtualUser)
     if holdToggle.Active then
         if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-            mouse:Click() -- Melakukan klik otomatis
+            -- Menggunakan VirtualUser untuk spam klik yang lebih efektif
+            VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
         end
     end
 end)
