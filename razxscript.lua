@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v6_Fixed" 
+local scriptIdentifier = "razxHub_v10_FixMove" 
 
 -- Cek script lama
 if _G[scriptIdentifier] then
@@ -45,8 +45,8 @@ screenGui.Name = "razxHub"
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 470)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -235)
+mainFrame.Size = UDim2.new(0, 280, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -138,7 +138,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 470)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 500)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -278,8 +278,7 @@ chibiToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic Instan Hold (FIXED ANTI-LOG)
--- Fungsi ini hanya jalan SAAT tombol diklik (bukan tiap frame)
+-- Logic Instan Hold
 local function applyPrompts()
     for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
@@ -288,7 +287,6 @@ local function applyPrompts()
     end
 end
 
--- Event ini mendeteksi item BARU yang muncul, jadi otomatis jadi instan tanpa cek ulang
 Workspace.DescendantAdded:Connect(function(desc)
     if holdToggle.Active and desc:IsA("ProximityPrompt") then
         desc.HoldDuration = 0
@@ -296,10 +294,8 @@ Workspace.DescendantAdded:Connect(function(desc)
 end)
 
 holdToggle.MouseButton1Click:Connect(function()
-    -- Klik di sini sudah menghandle visual di createToggle, 
-    -- tapi kita tambahkan logika khusus di sini
-    if not holdToggle.Active then -- Jika baru dinyalakan (False -> True)
-        applyPrompts() -- Cek map sekali saja
+    if not holdToggle.Active then
+        applyPrompts() 
     end
 end)
 
@@ -313,13 +309,12 @@ player.CharacterAdded:Connect(function(newChar)
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end
-    -- Re-apply prompts saat respawn jika fitur aktif
     if holdToggle.Active then
         applyPrompts()
     end
 end)
 
--- Main Loop (BERSIH DARI LOOP BERAT)
+-- Main Loop
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
 
@@ -341,11 +336,13 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Speed
+    -- Speed (MOVEMENT FIX)
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
+        humanoid.HipHeight = 3.5 -- FIX: Menaikkan kaki agar tidak tersandung tangga/part kecil
     else
         humanoid.WalkSpeed = 16
+        humanoid.HipHeight = 0 -- Reset tinggi kaki ke normal
     end
 
     -- Fly
