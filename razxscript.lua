@@ -1,7 +1,7 @@
 loadstring([[
-local scriptIdentifier = "razxHub_Reloaded" 
+local scriptIdentifier = "razxHub_v3" 
 
--- Cek script ganda
+-- Cek script lama, matikan jika ada
 if _G[scriptIdentifier] then
     _G[scriptIdentifier]:Disconnect()
     _G[scriptIdentifier] = nil
@@ -17,6 +17,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
+local mouse = player:GetMouse() -- Untuk fitur Instan Hold
 local character, humanoid, root
 local flying = false
 local minimized = false
@@ -43,8 +44,8 @@ screenGui.Name = "razxHub"
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 330)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -165)
+mainFrame.Size = UDim2.new(0, 280, 0, 380) -- Diperbesar sedikit karena ada fitur baru
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -190)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -94,7 +95,7 @@ minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
--- Logo R (Background Logo - Bisa Diklik)
+-- Logo R (Background Logo)
 local rLogoFrame = Instance.new("TextButton", mainFrame)
 rLogoFrame.Size = UDim2.new(1, 0, 1, 0)
 rLogoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -135,7 +136,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 330)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 380)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -248,15 +249,36 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal)
     }
 end
 
--- Buat Element UI
+-- Membuat Toggles (Posisi disesuaikan)
 local noclipToggle = createToggle("Noclip", 10)
 local infJumpToggle = createToggle("Inf Jump", 50)
 local speedToggle = createToggle("Speed", 90)
 local flyToggle = createToggle("Fly", 130)
+local chibiToggle = createToggle("Avatar Chibi", 170)
+local holdToggle = createToggle("Instan Hold", 210)
 
--- Slider Speed & Fly (Fly Max diubah jadi 500)
-local speedSlider = createSlider("Speed", 170, 16, 500, 50)
-local flySlider = createSlider("Fly Speed", 230, 10, 500, 50) 
+-- Membuat Sliders (Posisi diturunkan)
+local speedSlider = createSlider("Speed", 250, 16, 500, 50)
+local flySlider = createSlider("Fly Speed", 310, 10, 500, 50) 
+
+-- Logic Avatar Chibi (Bisa di ON/OFF)
+chibiToggle.MouseButton1Click:Connect(function()
+    if chibiToggle.Active then -- Saat dimatikan manual (logic reverse karena di atas diklik dulu baru ganti active)
+        -- Mematikan
+        chibiToggle.Active = false
+        chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        -- Reset karakter untuk menghilangkan efek chibi
+        player:LoadCharacter() 
+    else
+        -- Menghidupkan
+        chibiToggle.Active = true
+        chibiToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        -- Jalankan Script Chibi
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/SmilerVinix/ChibiScript/adf59dcdf5015c3fca08a897b026151ab66dcd59/CHIBIOBFUSICATED"))(true)
+        end)
+    end
+end)
 
 -- Anti-Reset Logic
 player.CharacterAdded:Connect(function(newChar)
@@ -264,12 +286,18 @@ player.CharacterAdded:Connect(function(newChar)
     humanoid = newChar:WaitForChild("Humanoid")
     root = newChar:WaitForChild("HumanoidRootPart")
     flying = false
+    -- Saat reset, matikan toggle chibi agar tidak bug (opsional, tapi disarankan)
+    if chibiToggle.Active then
+        chibiToggle.Active = false
+        chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end
 end)
 
 -- Main Loop
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
 
+    -- Noclip Logic
     if noclipToggle.Active then
         for _, part in pairs(character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
@@ -280,33 +308,33 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- Inf Jump Logic
     if infJumpToggle.Active then
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 
+    -- Speed Logic
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
     else
         humanoid.WalkSpeed = 16
     end
 
+    -- Fly Logic
     if flyToggle.Active then
         if not flying then
             flying = true
-            -- Buat BodyVelocity & BodyGyro baru jika belum ada/terreset
             bodyVelocity = Instance.new("BodyVelocity")
             bodyGyro = Instance.new("BodyGyro")
             bodyVelocity.Parent = root
             bodyGyro.Parent = root
             bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-            -- P (property) untuk mencegah jebakan di map
-            bodyVelocity.P = 10000 
+            bodyVelocity.P = 10000
         end
         
-        -- Ambil nilai slider setiap frame (Realtime update)
         local speedVal = flySlider.GetValue()
         local direction = Vector3.new(0,0,0)
         
@@ -318,8 +346,6 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction = direction - Vector3.new(0,1,0) end
 
         if direction.Magnitude > 0 then direction = direction.Unit end
-        
-        -- Update kecepatan
         bodyVelocity.Velocity = direction * speedVal
         bodyGyro.CFrame = workspace.CurrentCamera.CFrame
     else
@@ -328,6 +354,13 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
             if bodyVelocity then bodyVelocity:Destroy() end
             if bodyGyro then bodyGyro:Destroy() end
             root.Velocity = Vector3.new(0,0,0)
+        end
+    end
+
+    -- Instan Hold Logic (Spam Click saat mouse ditekan)
+    if holdToggle.Active then
+        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+            mouse:Click() -- Melakukan klik otomatis
         end
     end
 end)
