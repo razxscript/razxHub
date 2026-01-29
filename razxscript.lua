@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_Final" 
+local scriptIdentifier = "razxHub_v5" 
 
 -- Cek script lama
 if _G[scriptIdentifier] then
@@ -16,6 +16,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -23,7 +24,6 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
-local lastClickTime = 0 -- Untuk membatasi spam klik
 
 -- Fungsi Anti-Reset
 local function getChar()
@@ -50,7 +50,7 @@ mainFrame.Size = UDim2.new(0, 280, 0, 470)
 mainFrame.Position = UDim2.new(0.5, -140, 0.5, -235)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
-mainFrame.Active = true -- SELALU AKTIF BISA DIGESER
+mainFrame.Active = true
 mainFrame.Draggable = true 
 
 -- Judul
@@ -97,7 +97,7 @@ minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
--- Logo R (Hanya cover visual, Active=false agar bisa drag parentnya)
+-- Logo R (Visual)
 local rLogoFrame = Instance.new("TextButton", mainFrame)
 rLogoFrame.Size = UDim2.new(1, 0, 1, 0)
 rLogoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -106,7 +106,7 @@ rLogoFrame.ZIndex = 1
 rLogoFrame.BorderSizePixel = 0
 rLogoFrame.Text = ""
 rLogoFrame.AutoButtonColor = false
-rLogoFrame.Active = false -- FIX: Agar Input Mouse diteruskan ke mainFrame (Draggable)
+rLogoFrame.Active = false -- Fix Agar tidak berantakan saat di drag
 rLogoFrame.Parent = mainFrame
 
 local rLogoLabel = Instance.new("TextLabel", rLogoFrame)
@@ -291,6 +291,21 @@ player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
+-- Logic Instan Hold (ProximityPrompt Bypass)
+local function setPromptsInstant()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            v.HoldDuration = 0
+        end
+    end
+end
+
+Workspace.DescendantAdded:Connect(function(desc)
+    if holdToggle.Active and desc:IsA("ProximityPrompt") then
+        desc.HoldDuration = 0
+    end
+end)
+
 -- Main Loop
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
@@ -354,17 +369,10 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
             root.Velocity = Vector3.new(0,0,0)
         end
     end
-
-    -- Instan Hold (Dibatasi kecepatannya agar tidak crash)
+    
+    -- Instan Hold Logic Loop (Pastikan tetap 0)
     if holdToggle.Active then
-        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-            -- Batasi spam klik (setiap 0.05 detik)
-            if tick() - lastClickTime > 0.05 then 
-                VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                lastClickTime = tick()
-            end
-        end
+        setPromptsInstant()
     end
 end)
 ]])()
