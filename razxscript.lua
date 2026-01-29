@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v7_AntiLag" 
+local scriptIdentifier = "razxHub_v8_Stable" 
 
 -- Cek script lama
 if _G[scriptIdentifier] then
@@ -17,7 +17,6 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
-local UserGameSettings = game:GetService("UserGameSettings")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -47,7 +46,7 @@ screenGui.Name = "razxHub"
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 500) -- Sedikit diperpanjang
+mainFrame.Size = UDim2.new(0, 280, 0, 500)
 mainFrame.Position = UDim2.new(0.5, -140, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
@@ -260,9 +259,9 @@ local speedToggle = createToggle("Speed", 90)
 local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
-local antiLagToggle = createToggle("Anti Lag", 250) -- Toggle Baru
+local antiLagToggle = createToggle("Anti Lag", 250)
 
--- Buat Sliders (Posisi diturunkan lagi)
+-- Buat Sliders
 local speedSlider = createSlider("Speed", 300, 16, 500, 50)
 local flySlider = createSlider("Fly Speed", 360, 10, 500, 50) 
 
@@ -302,23 +301,6 @@ holdToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic Anti Lag
-antiLagToggle.MouseButton1Click:Connect(function()
-    if antiLagToggle.Active then -- Nyalakan
-        pcall(function()
-            Lighting.GlobalShadows = false -- Matikan bayangan (penting!)
-            Lighting.FogEnd = 10000 -- Matikan kabut
-            UserGameSettings.SavedQualityLevel = 0 -- Kualitas Terendah
-        end)
-    else -- Matikan (Balik normal)
-        pcall(function()
-            Lighting.GlobalShadows = true
-            Lighting.FogEnd = 1000000 -- Balik kabut
-            UserGameSettings.SavedQualityLevel = 10 -- Kualitas Medium
-        end)
-    end
-end)
-
 -- Anti-Reset Logic
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
@@ -332,18 +314,18 @@ player.CharacterAdded:Connect(function(newChar)
     if holdToggle.Active then
         applyPrompts()
     end
-    -- Pastikan anti lag tetap aktif jika respawn
-    if antiLagToggle.Active then
-        pcall(function()
-            Lighting.GlobalShadows = false
-            UserGameSettings.SavedQualityLevel = 0
-        end)
-    end
 end)
 
 -- Main Loop
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
+
+    -- Logic Anti Lag (Dipindah ke sini agar lebih stabil)
+    if antiLagToggle.Active then
+        pcall(function() Lighting.GlobalShadows = false end)
+    else
+        pcall(function() Lighting.GlobalShadows = true end)
+    end
 
     -- Noclip
     if noclipToggle.Active then
