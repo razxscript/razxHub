@@ -1,5 +1,5 @@
 loadstring([[
-local scriptIdentifier = "razxHub_v8_Stable" 
+local scriptIdentifier = "razxHub_v6_Fixed" 
 
 -- Cek script lama
 if _G[scriptIdentifier] then
@@ -16,7 +16,6 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -46,8 +45,8 @@ screenGui.Name = "razxHub"
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 280, 0, 470)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -235)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -139,7 +138,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 500)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 470)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -259,11 +258,10 @@ local speedToggle = createToggle("Speed", 90)
 local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
-local antiLagToggle = createToggle("Anti Lag", 250)
 
 -- Buat Sliders
-local speedSlider = createSlider("Speed", 300, 16, 500, 50)
-local flySlider = createSlider("Fly Speed", 360, 10, 500, 50) 
+local speedSlider = createSlider("Speed", 260, 16, 500, 50)
+local flySlider = createSlider("Fly Speed", 320, 10, 500, 50) 
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -280,7 +278,8 @@ chibiToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic Instan Hold
+-- Logic Instan Hold (FIXED ANTI-LOG)
+-- Fungsi ini hanya jalan SAAT tombol diklik (bukan tiap frame)
 local function applyPrompts()
     for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
@@ -289,6 +288,7 @@ local function applyPrompts()
     end
 end
 
+-- Event ini mendeteksi item BARU yang muncul, jadi otomatis jadi instan tanpa cek ulang
 Workspace.DescendantAdded:Connect(function(desc)
     if holdToggle.Active and desc:IsA("ProximityPrompt") then
         desc.HoldDuration = 0
@@ -296,8 +296,10 @@ Workspace.DescendantAdded:Connect(function(desc)
 end)
 
 holdToggle.MouseButton1Click:Connect(function()
-    if not holdToggle.Active then
-        applyPrompts() 
+    -- Klik di sini sudah menghandle visual di createToggle, 
+    -- tapi kita tambahkan logika khusus di sini
+    if not holdToggle.Active then -- Jika baru dinyalakan (False -> True)
+        applyPrompts() -- Cek map sekali saja
     end
 end)
 
@@ -311,21 +313,15 @@ player.CharacterAdded:Connect(function(newChar)
         chibiToggle.Active = false
         chibiToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end
+    -- Re-apply prompts saat respawn jika fitur aktif
     if holdToggle.Active then
         applyPrompts()
     end
 end)
 
--- Main Loop
+-- Main Loop (BERSIH DARI LOOP BERAT)
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
-
-    -- Logic Anti Lag (Dipindah ke sini agar lebih stabil)
-    if antiLagToggle.Active then
-        pcall(function() Lighting.GlobalShadows = false end)
-    else
-        pcall(function() Lighting.GlobalShadows = true end)
-    end
 
     -- Noclip
     if noclipToggle.Active then
