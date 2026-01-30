@@ -166,7 +166,7 @@ end
 minBtn.MouseButton1Click:Connect(function() setMinimize(true) end)
 rLogoFrame.MouseButton1Click:Connect(function() setMinimize(false) end)
 
--- Function Create Toggle (Ditambah parentFrame)
+-- Function Create Toggle
 local function createToggle(name, yPos, parentFrame)
     local container = Instance.new("Frame", parentFrame)
     container.Size = UDim2.new(1, -10, 0, 30)
@@ -202,7 +202,7 @@ local function createToggle(name, yPos, parentFrame)
     return toggle
 end
 
--- Function Create Slider (Ditambah parentFrame)
+-- Function Create Slider
 local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     local container = Instance.new("Frame", parentFrame)
     container.Size = UDim2.new(1, -10, 0, 50)
@@ -268,25 +268,20 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
 end
 
 -- Buat Toggles (Distribusi ke 2 Kolom)
--- Kiri: Noclip, Inf Jump, Speed, Fly
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
 local infJumpToggle = createToggle("Inf Jump", 50, leftColumn)
 local speedToggle = createToggle("Speed", 90, leftColumn)
 local flyToggle = createToggle("Fly", 130, leftColumn)
 
--- Kanan: Chibi, Hold, ESP, Jump High
 local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
 -- Buat Sliders
--- Kiri: Slider Speed di bawah toggle Speed
 local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
-
--- Kanan: Jump Slider & Fly Slider
 local jumpSlider = createSlider("Jump H", 170, 0, 500, 100, rightColumn)
-local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn) -- Fly Slider di kiri bawah
+local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -347,14 +342,12 @@ local function createHighlight(obj, color)
     highlight.OutlineColor = color
     highlight.FillTransparency = 0.4
     highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     highlight.Parent = obj
     return highlight
 end
 
-local function createTag(obj, text)
-    local head = obj:FindFirstChild("Head")
-    if not head then return nil end
-
+local function createTag(head, text)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "RazxESP_Tag"
     billboard.Adornee = head
@@ -376,9 +369,10 @@ local function createTag(obj, text)
     return billboard
 end
 
+-- PERBAIKAN ESP UPDATE
 local function updateESP()
-    -- 1. Bersihkan ESP jika mati
     if not espToggle.Active then
+        -- Clear logic
         for _, data in pairs(ESP_Storage) do
             if data.Highlight then data.Highlight:Destroy() end
             if data.Tag then data.Tag:Destroy() end
@@ -387,26 +381,46 @@ local function updateESP()
         return
     end
 
-    -- 2. Cari Target (Players) - PAKAI DISPLAY NAME & HIJAU
+    -- 1. Update Players (FIX: Head Loading & New Player)
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
-            if not ESP_Storage[p.Character] then
-                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau
-                local t = createTag(p.Character, p.DisplayName) -- Display Name
-                ESP_Storage[p.Character] = {Highlight = h, Tag = t, Type = "Player", Name = p.DisplayName}
-            end
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
             
-            -- Update Jarak
-            local dist = math.floor((character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude)
-            if ESP_Storage[p.Character].Tag then
-                ESP_Storage[p.Character].Tag.TextLabel.Text = ESP_Storage[p.Character].Name .. " ["..dist.."m]"
+            -- Init Storage
+            if not ESP_Storage[char] then
+                ESP_Storage[char] = {
+                    Highlight = createHighlight(char, Color3.fromRGB(0, 255, 0)), -- Hijau
+                    Tag = nil,
+                    Name = p.DisplayName,
+                    Type = "Player"
+                }
+            end
+
+            -- Try to create Tag if Head is missing (Loading check)
+            if not ESP_Storage[char].Tag then
+                local head = char:FindFirstChild("Head")
+                if head then
+                    ESP_Storage[char].Tag = createTag(head, ESP_Storage[char].Name)
+                end
+            end
+
+            -- Update Distance & Text
+            if ESP_Storage[char].Tag then
+                local dist = math.floor((root.Position - char.HumanoidRootPart.Position).Magnitude)
+                ESP_Storage[char].Tag.TextLabel.Text = ESP_Storage[char].Name .. " ["..dist.."m]"
             end
         end
     end
 
-    -- 3. Cari Target (NPCs) - MERAH
+    -- 2. Update NPCs (FIX: Head Loading)
+    for _, obj in pairs(Workspace:GetDescendants()) do -- Pindah ke GetDescendants untuk lebih akurat, atau GetChildren jika ingin performa
+        -- Kita pakai GetChildren() Workspace agar tidak lag scan seluruh descendants
+    end
+    
+    -- Kita stick ke GetChildren Workspace untuk performa tapi logicnya diperbaiki
     for _, obj in pairs(Workspace:GetChildren()) do
-        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") then
+        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+            -- Cek apakah ini Player (Double check)
             local isPlayer = false
             for _, p in pairs(Players:GetPlayers()) do
                 if p.Character == obj then
@@ -415,24 +429,36 @@ local function updateESP()
                 end
             end
             
-            if not isPlayer and not ESP_Storage[obj] then
-                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah
-                local t = createTag(obj, "NPC")
-                ESP_Storage[obj] = {Highlight = h, Tag = t, Type = "NPC", Name = "NPC"}
-            end
-            
-            -- Update Jarak NPC
-            local humanoidRoot = obj:FindFirstChild("HumanoidRootPart")
-            if humanoidRoot then
-                local dist = math.floor((character.HumanoidRootPart.Position - humanoidRoot.Position).Magnitude)
+            if not isPlayer then
+                if not ESP_Storage[obj] then
+                    ESP_Storage[obj] = {
+                        Highlight = createHighlight(obj, Color3.fromRGB(255, 0, 0)), -- Merah
+                        Tag = nil,
+                        Name = "NPC",
+                        Type = "NPC"
+                    }
+                end
+
+                -- NPC Tag Loading
+                if not ESP_Storage[obj].Tag then
+                    local head = obj:FindFirstChild("Head")
+                    if head then
+                        ESP_Storage[obj].Tag = createTag(head, "NPC")
+                    end
+                end
+
                 if ESP_Storage[obj].Tag then
-                    ESP_Storage[obj].Tag.TextLabel.Text = ESP_Storage[obj].Name .. " ["..dist.."m]"
+                    local humRoot = obj:FindFirstChild("HumanoidRootPart")
+                    if humRoot then
+                        local dist = math.floor((root.Position - humRoot.Position).Magnitude)
+                        ESP_Storage[obj].Tag.TextLabel.Text = "NPC ["..dist.."m]"
+                    end
                 end
             end
         end
     end
 
-    -- 4. Hapus ESP target yang sudah mati/menghilang
+    -- 3. Cleanup Dead/Removed
     for char, data in pairs(ESP_Storage) do
         if not char or not char.Parent then
             if data.Highlight then data.Highlight:Destroy() end
@@ -473,7 +499,7 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.MaxSlopeAngle = 89 
     else
         humanoid.WalkSpeed = 16
-        humanoid.MaxSlopeAngle = 89 -- FIX: 0 -> 89
+        humanoid.MaxSlopeAngle = 89
     end
 
     -- Jump High Logic
