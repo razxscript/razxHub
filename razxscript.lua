@@ -47,10 +47,10 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame
+-- Main Frame (Diperbesar sedikit menjadi 520 agar muat semua fitur)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 280, 0, 520)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -260) -- Posisi disesuaikan agar tetap di tengah
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -140,7 +140,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 500)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 520)}):Play() -- Sesuaikan restore size
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -260,11 +260,13 @@ local speedToggle = createToggle("Speed", 90)
 local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
-local espToggle = createToggle("ESP Player & NPC", 250) -- TAMBAHAN ESP
+local espToggle = createToggle("ESP Player & NPC", 250)
+local jumpHighToggle = createToggle("Jump High", 290) -- TAMBAHAN JUMP HIGH
 
--- Buat Sliders (Posisi disesuaikan agar tidak bertabrakan)
-local speedSlider = createSlider("Speed", 300, 16, 500, 50)
-local flySlider = createSlider("Fly Speed", 360, 10, 500, 50) 
+-- Buat Sliders
+local speedSlider = createSlider("Speed", 330, 16, 500, 50)
+local jumpSlider = createSlider("Jump Height", 380, 0, 500, 100) -- TAMBAHAN SLIDER JUMP
+local flySlider = createSlider("Fly Speed", 430, 10, 500, 50) 
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -382,10 +384,9 @@ local function updateESP()
         end
     end
 
-    -- 3. Cari Target (NPCs) - Hanya scan Workspace langsung untuk performa (bisa diubah GetDescendants jika butuh dalam part)
+    -- 3. Cari Target (NPCs)
     for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") then
-            -- Pastikan bukan karakter player lain
             local isPlayer = false
             for _, p in pairs(Players:GetPlayers()) do
                 if p.Character == obj then
@@ -446,13 +447,21 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Speed (FIX: Mengapung & Ngesot)
+    -- Speed
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
-        humanoid.MaxSlopeAngle = 89 -- FIX: Bisa naik tangga/part kecil tanpa mengapung
+        humanoid.MaxSlopeAngle = 89 
     else
         humanoid.WalkSpeed = 16
-        humanoid.MaxSlopeAngle = 0 -- Reset fisika normal
+        humanoid.MaxSlopeAngle = 0
+    end
+
+    -- Jump High Logic (BARU)
+    if jumpHighToggle.Active then
+        humanoid.UseJumpPower = true -- Pastikan menggunakan JumpPower
+        humanoid.JumpPower = jumpSlider.GetValue()
+    else
+        humanoid.JumpPower = 50 -- Default Roblox
     end
 
     -- Fly
