@@ -287,24 +287,31 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     }
 end
 
--- Buat Toggles
+-- --- PEMASANGAN UI (DIATUR POSISINYA AGAR TIDAK NYATU) --- --
+
+-- KOLOM KIRI
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
 local infJumpToggle = createToggle("Inf Jump", 50, leftColumn)
 local speedToggle = createToggle("Speed", 90, leftColumn)
 local flyToggle = createToggle("Fly", 130, leftColumn)
 
+-- Slider Kiri
+local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
+local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
+
+-- KOLOM KANAN
 local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 local tpToggle = createToggle("TP List", 170, rightColumn) 
 
--- Buat Sliders
-local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
-local jumpSlider = createSlider("Jump H", 170, 0, 500, 100, rightColumn)
-local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
+-- Slider Kanan
+local jumpSlider = createSlider("Jump H", 210, 0, 500, 100, rightColumn) -- Posisi diubah ke 210 agar tidak nyatu
 
--- --- TELEPORT UI LOGIC (FIX LIST & TEXT) --- --
+-- ------------------------------------------------------ --
+
+-- --- TELEPORT UI LOGIC (FIX LIST NAMA & NYATU) --- --
 local tpMenuFrame = Instance.new("Frame", screenGui)
 tpMenuFrame.Size = UDim2.new(0, 150, 0, 250)
 tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125)
@@ -326,7 +333,7 @@ tpTitle.TextSize = 14
 tpTitle.ZIndex = 11
 
 local tpListLayout = Instance.new("UIListLayout", tpMenuFrame)
-tpListLayout.Padding = UDim.new(0, 5) -- Jarak antar tombol (Fix Nyatu)
+tpListLayout.Padding = UDim.new(0, 5) -- Jarak antar tombol agar gak nyatu
 tpListLayout.SortOrder = Enum.SortOrder.Name
 
 local tpScrollFrame = Instance.new("ScrollingFrame", tpMenuFrame)
@@ -337,33 +344,34 @@ tpScrollFrame.ScrollBarThickness = 4
 tpScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 tpScrollFrame.ZIndex = 11
 
--- Fungsi Refresh List TP (FIX NAMA HILANG)
+-- Fungsi Refresh List TP
 local function refreshTpList()
     -- Hapus tombol lama
-    for _, btn in pairs(tpScrollFrame:GetChildren()) do
-        if btn:IsA("TextButton") or btn:IsA("Frame") then -- Clearing all items
-            btn:Destroy() 
+    for _, child in pairs(tpScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then -- Hapus container
+            child:Destroy() 
         end
     end
 
     -- Tambah tombol baru
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= player then
-            -- Container biar gak nyatu textnya sama background
             local btnContainer = Instance.new("Frame", tpScrollFrame)
             btnContainer.Name = p.Name
-            btnContainer.Size = UDim2.new(1, 0, 0, 30) -- Tinggi tombol diperbesar
+            btnContainer.Size = UDim2.new(1, 0, 0, 30) -- Tinggi tetap
             btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btnContainer.BorderSizePixel = 0
             
             local btn = Instance.new("TextButton", btnContainer)
             btn.Size = UDim2.new(1, 0, 1, 0)
             btn.BackgroundTransparency = 1
-            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.TextColor3 = Color3.new(1, 1, 1) -- Putih biar kelihatan
             btn.Font = Enum.Font.Gotham
             btn.TextSize = 13
-            btn.Text = p.DisplayName -- Menggunakan DisplayName (Bisa diganti p.Name kalau mau)
+            btn.Text = p.DisplayName 
             btn.TextXAlignment = Enum.TextXAlignment.Left
-            btn.PaddingLeft = 5
+            btn.TextTransparency = 0 -- Pastikan teks muncul
+            btn.PaddingLeft = 10
             btn.AutoButtonColor = false
 
             -- Hover Effect
@@ -384,8 +392,10 @@ local function refreshTpList()
     end
     
     -- Update CanvasSize biar bisa scroll
-    wait(0.05) -- Wait sedikit biar layout update
-    tpScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tpListLayout.AbsoluteContentSize.Y)
+    task.wait() 
+    if tpListLayout and tpListLayout.AbsoluteContentSize then
+        tpScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tpListLayout.AbsoluteContentSize.Y)
+    end
 end
 
 -- Toggle Logic TP Menu
