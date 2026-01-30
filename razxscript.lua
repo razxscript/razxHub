@@ -52,7 +52,7 @@ screenGui.Name = "razxHub"
 
 -- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 320, 0, 380) -- Tinggi ditambah dikit untuk TP Toggle
+mainFrame.Size = UDim2.new(0, 320, 0, 380)
 mainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
@@ -82,9 +82,22 @@ closeBtn.ZIndex = 3
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
+-- FUNGSI CLEANUP SAAT TUTUP
 closeBtn.MouseButton1Click:Connect(function()
-    _G[scriptIdentifier]:Disconnect()
-    _G[scriptIdentifier] = nil
+    -- 1. Hapus ESP dulu biar bersih
+    for _, data in pairs(ESP_Storage) do
+        if data.Highlight then data.Highlight:Destroy() end
+        if data.Tag then data.Tag:Destroy() end
+    end
+    ESP_Storage = {}
+
+    -- 2. Putar Loop
+    if _G[scriptIdentifier] then
+        _G[scriptIdentifier]:Disconnect()
+        _G[scriptIdentifier] = nil
+    end
+    
+    -- 3. Hapus GUI
     screenGui:Destroy()
 end)
 
@@ -155,7 +168,6 @@ local function setMinimize(isMinimized)
         contentFrame.Visible = false
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
-        -- Hide TP Menu if minimized
         tpMenuFrame.Visible = false
     else
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 380)}):Play()
@@ -165,7 +177,6 @@ local function setMinimize(isMinimized)
         contentFrame.Visible = true
         rLogoFrame.Visible = false
         rLogoLabel.Visible = false
-        -- Restore TP Menu state
         if tpToggle and tpToggle.Active then
             tpMenuFrame.Visible = true
         end
@@ -286,17 +297,17 @@ local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
-local tpToggle = createToggle("TP List", 170, rightColumn) -- Toggle TP Menu
+local tpToggle = createToggle("TP List", 170, rightColumn) 
 
 -- Buat Sliders
 local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
 local jumpSlider = createSlider("Jump H", 170, 0, 500, 100, rightColumn)
 local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
 
--- --- TELEPORT UI LOGIC --- --
+-- --- TELEPORT UI LOGIC (FIX LIST & TEXT) --- --
 local tpMenuFrame = Instance.new("Frame", screenGui)
 tpMenuFrame.Size = UDim2.new(0, 150, 0, 250)
-tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125) -- Di kanan main menu
+tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125)
 tpMenuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 tpMenuFrame.BorderSizePixel = 1
 tpMenuFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
@@ -315,7 +326,7 @@ tpTitle.TextSize = 14
 tpTitle.ZIndex = 11
 
 local tpListLayout = Instance.new("UIListLayout", tpMenuFrame)
-tpListLayout.Padding = UDim.new(0, 2)
+tpListLayout.Padding = UDim.new(0, 5) -- Jarak antar tombol (Fix Nyatu)
 tpListLayout.SortOrder = Enum.SortOrder.Name
 
 local tpScrollFrame = Instance.new("ScrollingFrame", tpMenuFrame)
@@ -326,40 +337,55 @@ tpScrollFrame.ScrollBarThickness = 4
 tpScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 tpScrollFrame.ZIndex = 11
 
--- Fungsi Refresh List TP
+-- Fungsi Refresh List TP (FIX NAMA HILANG)
 local function refreshTpList()
     -- Hapus tombol lama
     for _, btn in pairs(tpScrollFrame:GetChildren()) do
-        if btn:IsA("TextButton") then btn:Destroy() end
+        if btn:IsA("TextButton") or btn:IsA("Frame") then -- Clearing all items
+            btn:Destroy() 
+        end
     end
 
     -- Tambah tombol baru
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= player then
-            local btn = Instance.new("TextButton", tpScrollFrame)
-            btn.Size = UDim2.new(1, -4, 0, 25)
-            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            -- Container biar gak nyatu textnya sama background
+            local btnContainer = Instance.new("Frame", tpScrollFrame)
+            btnContainer.Name = p.Name
+            btnContainer.Size = UDim2.new(1, 0, 0, 30) -- Tinggi tombol diperbesar
+            btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            
+            local btn = Instance.new("TextButton", btnContainer)
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.BackgroundTransparency = 1
             btn.TextColor3 = Color3.new(1, 1, 1)
             btn.Font = Enum.Font.Gotham
             btn.TextSize = 13
-            btn.Text = p.Name
+            btn.Text = p.DisplayName -- Menggunakan DisplayName (Bisa diganti p.Name kalau mau)
+            btn.TextXAlignment = Enum.TextXAlignment.Left
+            btn.PaddingLeft = 5
             btn.AutoButtonColor = false
 
+            -- Hover Effect
+            btn.MouseEnter:Connect(function()
+                btnContainer.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            end)
+            btn.MouseLeave:Connect(function()
+                btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            end)
+
+            -- Click Event
             btn.MouseButton1Click:Connect(function()
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and root then
                     root.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                 end
             end)
-            
-            btn.MouseEnter:Connect(function()
-                btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-            end)
-            
-            btn.MouseLeave:Connect(function()
-                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            end)
         end
     end
+    
+    -- Update CanvasSize biar bisa scroll
+    wait(0.05) -- Wait sedikit biar layout update
+    tpScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tpListLayout.AbsoluteContentSize.Y)
 end
 
 -- Toggle Logic TP Menu
