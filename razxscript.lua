@@ -42,12 +42,6 @@ character = player.Character or player.CharacterAdded:Wait()
 humanoid = character:WaitForChild("Humanoid")
 root = character:WaitForChild("HumanoidRootPart")
 
--- FIX 1: Reset Velocity saat start agar tidak gerak sendiri
-if root then 
-    root.Velocity = Vector3.new(0,0,0) 
-    root.RotVelocity = Vector3.new(0,0,0)
-end
-
 -- UI Setup
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
@@ -111,7 +105,7 @@ minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
 minBtn.ZIndex = 10
 minBtn.AutoButtonColor = false
-minBtn.Parent = mainFrame
+minBtn.Parent = mainFrame -- FIX TYPO DI SINI (tadinya mainBtn)
 
 -- Logo R
 local rLogoFrame = Instance.new("TextButton", mainFrame)
@@ -310,7 +304,7 @@ chibiToggle.MouseButton1Click:Connect(function()
         player:LoadCharacter() 
     else
         chibiToggle.Active = true
-        chibiToggle.BackgroundColor3 = Color3.fromRGB(0,255, 0)
+        chibiToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/SmilerVinix/ChibiScript/adf59dcdf5015c3fca08a897b026151ab66dcd59/CHIBIOBFUSICATED"))(true)
         end)
@@ -481,18 +475,17 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
 
     updateESP()
 
-    -- FIX 2: Noclip Optimasi (Hanya update jika perlu)
+    -- Noclip (Standard logic agar anti-crash)
     if noclipToggle.Active then
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
+            if part:IsA("BasePart") then 
+                part.CanCollide = false 
             end
         end
     else
-        -- Hanya update kembali jika sebelumnya di Noclip
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and not part.CanCollide then
-                part.CanCollide = true
+            if part:IsA("BasePart") then 
+                part.CanCollide = true 
             end
         end
     end
