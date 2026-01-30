@@ -25,6 +25,9 @@ local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
 
+-- ESP Variables
+local ESP_Storage = {}
+
 -- Fungsi Anti-Reset
 local function getChar()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -257,10 +260,11 @@ local speedToggle = createToggle("Speed", 90)
 local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
+local espToggle = createToggle("ESP Player & NPC", 250) -- TAMBAHAN ESP
 
--- Buat Sliders
-local speedSlider = createSlider("Speed", 260, 16, 500, 50)
-local flySlider = createSlider("Fly Speed", 320, 10, 500, 50) 
+-- Buat Sliders (Posisi disesuaikan agar tidak bertabrakan)
+local speedSlider = createSlider("Speed", 300, 16, 500, 50)
+local flySlider = createSlider("Fly Speed", 360, 10, 500, 50) 
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -313,9 +317,116 @@ player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
+-- ESP Logic Functions
+local function createHighlight(obj, color)
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "RazxESP_Highlight"
+    highlight.FillColor = color
+    highlight.OutlineColor = color
+    highlight.FillTransparency = 0.4
+    highlight.OutlineTransparency = 0
+    highlight.Parent = obj
+    return highlight
+end
+
+local function createTag(obj, text)
+    local head = obj:FindFirstChild("Head")
+    if not head then return nil end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "RazxESP_Tag"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 100, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = screenGui
+
+    local nameLabel = Instance.new("TextLabel", billboard)
+    nameLabel.Size = UDim2.new(1, 0, 1, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = text
+    nameLabel.TextColor3 = Color3.new(1, 1, 1)
+    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextStrokeColor3 = Color3.new(0,0,0)
+    nameLabel.TextSize = 13
+    nameLabel.Font = Enum.Font.GothamBold
+    
+    return billboard
+end
+
+local function updateESP()
+    -- 1. Bersihkan ESP jika mati
+    if not espToggle.Active then
+        for _, data in pairs(ESP_Storage) do
+            if data.Highlight then data.Highlight:Destroy() end
+            if data.Tag then data.Tag:Destroy() end
+        end
+        ESP_Storage = {}
+        return
+    end
+
+    -- 2. Cari Target (Players)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            if not ESP_Storage[p.Character] then
+                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau untuk Player
+                local t = createTag(p.Character, p.Name)
+                ESP_Storage[p.Character] = {Highlight = h, Tag = t, Type = "Player", Name = p.Name}
+            end
+            
+            -- Update Jarak
+            local dist = math.floor((character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude)
+            if ESP_Storage[p.Character].Tag then
+                ESP_Storage[p.Character].Tag.TextLabel.Text = ESP_Storage[p.Character].Name .. " ["..dist.."m]"
+            end
+        end
+    end
+
+    -- 3. Cari Target (NPCs) - Hanya scan Workspace langsung untuk performa (bisa diubah GetDescendants jika butuh dalam part)
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") then
+            -- Pastikan bukan karakter player lain
+            local isPlayer = false
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character == obj then
+                    isPlayer = true
+                    break
+                end
+            end
+            
+            if not isPlayer and not ESP_Storage[obj] then
+                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah untuk NPC
+                local t = createTag(obj, "NPC")
+                ESP_Storage[obj] = {Highlight = h, Tag = t, Type = "NPC", Name = "NPC"}
+            end
+            
+            -- Update Jarak NPC
+            local humanoidRoot = obj:FindFirstChild("HumanoidRootPart")
+            if humanoidRoot then
+                local dist = math.floor((character.HumanoidRootPart.Position - humanoidRoot.Position).Magnitude)
+                if ESP_Storage[obj].Tag then
+                    ESP_Storage[obj].Tag.TextLabel.Text = ESP_Storage[obj].Name .. " ["..dist.."m]"
+                end
+            end
+        end
+    end
+
+    -- 4. Hapus ESP target yang sudah mati/menghilang
+    for char, data in pairs(ESP_Storage) do
+        if not char or not char.Parent then
+            if data.Highlight then data.Highlight:Destroy() end
+            if data.Tag then data.Tag:Destroy() end
+            ESP_Storage[char] = nil
+        end
+    end
+end
+
 -- Main Loop
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
+
+    -- Jalankan Update ESP
+    updateESP()
 
     -- Noclip
     if noclipToggle.Active then
