@@ -24,14 +24,11 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
+local spinning = false
+local spinSpeed = 0
 
 -- ESP Variables
 local ESP_Storage = {}
-
--- ANIMASI VARIABLES
-local jumpAnimId = "rbxassetid://656117877" -- ID Backflip (Bisa diganti ID Adidas dll)
-local isPlayingAnim = false
-local animTrack
 
 -- Fungsi Anti-Reset
 local function getChar()
@@ -80,7 +77,7 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.ZIndex = 10 -- ZIndex ditinggikan
+closeBtn.ZIndex = 3
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
@@ -108,7 +105,7 @@ minBtn.TextColor3 = Color3.new(1, 1, 1)
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
-minBtn.ZIndex = 10 -- ZIndex ditinggikan
+minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
@@ -299,8 +296,9 @@ local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
--- FITUR ANIMASI LOMPAT
-local animJumpToggle = createToggle("Anim Lompat", 170, rightColumn)
+-- PENGGANTI TP: Parkour / Lompat Salto
+local parkourToggle = createToggle("Lompat Salto", 170, rightColumn) 
+local parkourSlider = createSlider("Putaran", 210, 1, 50, 10, rightColumn) 
 
 -- ---------------------------- --
 
@@ -501,27 +499,6 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Animasi Lompat (Anim Override)
-    if animJumpToggle.Active then
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            if not isPlayingAnim then
-                isPlayingAnim = true
-                -- Load dan Play Animasi
-                local animInstance = Instance.new("Animation")
-                animInstance.AnimationId = jumpAnimId
-                animTrack = humanoid:LoadAnimation(animInstance)
-                animTrack:Play()
-                
-                animTrack.Stopped:Connect(function()
-                    isPlayingAnim = false
-                end)
-                
-                -- Biar tidak spam animasi
-                task.wait(0.5)
-            end
-        end
-    end
-
     -- Speed
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
@@ -537,6 +514,17 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.JumpPower = jumpSlider.GetValue()
     else
         humanoid.JumpPower = 50
+    end
+
+    -- LOMPAT SALTO (PARKOUR) LOGIC
+    if parkourToggle.Active then
+        if UserInputService:IsKeyDown(Enum.KeyCode.F) then -- Tombol F untuk Salto
+            -- Ambil kecepatan putaran dari slider
+            local rotationAmount = parkourSlider.GetValue() 
+            
+            -- Putarkan RootPart
+            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(rotationAmount), 0)
+        end
     end
 
     -- Fly
