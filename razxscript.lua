@@ -24,8 +24,6 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
-local spinning = false
-local spinSpeed = 0
 
 -- ESP Variables
 local ESP_Storage = {}
@@ -49,10 +47,10 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame
+-- Main Frame (Dikecilkan jadi 320 karena fitur dikurangi)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 320, 0, 380)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
+mainFrame.Size = UDim2.new(0, 320, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -160)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -77,7 +75,7 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.ZIndex = 3
+closeBtn.ZIndex = 10 -- ZIndex Tinggi
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
@@ -105,7 +103,7 @@ minBtn.TextColor3 = Color3.new(1, 1, 1)
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
-minBtn.ZIndex = 3
+minBtn.ZIndex = 10 -- ZIndex Tinggi
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
@@ -164,7 +162,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 380)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 320)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -278,7 +276,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     }
 end
 
--- --- PEMASANGAN UI --- --
+-- --- PEMASANGAN UI (BERSIH DARI FITUR LOMPAT ANEH) --- --
 
 -- KOLOM KIRI
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
@@ -287,20 +285,16 @@ local speedToggle = createToggle("Speed", 90, leftColumn)
 local flyToggle = createToggle("Fly", 130, leftColumn)
 
 -- Slider Kiri
-local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
+local speedSlider = createSlider("Speed", 170, 16, 500, 50, leftColumn)
 local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
 
 -- KOLOM KANAN
 local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
-local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
--- PENGGANTI TP: Parkour / Lompat Salto
-local parkourToggle = createToggle("Lompat Salto", 170, rightColumn) 
-local parkourSlider = createSlider("Putaran", 210, 1, 50, 10, rightColumn) 
+-- --------------------------------------------------- --
 
--- ---------------------------- --
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -508,23 +502,9 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.MaxSlopeAngle = 89
     end
 
-    -- Jump High
-    if jumpHighToggle.Active then
-        humanoid.UseJumpPower = true
-        humanoid.JumpPower = jumpSlider.GetValue()
-    else
-        humanoid.JumpPower = 50
-    end
-
-    -- LOMPAT SALTO (PARKOUR) LOGIC
-    if parkourToggle.Active then
-        if UserInputService:IsKeyDown(Enum.KeyCode.F) then -- Tombol F untuk Salto
-            -- Ambil kecepatan putaran dari slider
-            local rotationAmount = parkourSlider.GetValue() 
-            
-            -- Putarkan RootPart
-            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(rotationAmount), 0)
-        end
+    -- Jump Power (Default, Tidak ada fitur Jump High)
+    if not flyToggle.Active then -- Pastikan Fly mati
+        humanoid.JumpPower = 50 
     end
 
     -- Fly
