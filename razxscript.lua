@@ -47,10 +47,10 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame
+-- Main Frame (Diperlebar untuk 2 kolom)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 280, 0, 520)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -260)
+mainFrame.Size = UDim2.new(0, 320, 0, 350) -- Lebar 320, Tinggi 350
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -175) -- Posisi Tengah
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -59,7 +59,7 @@ mainFrame.Draggable = true
 -- Judul
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1, 0, 0, 35)
-title.Text = "razxHub"
+title.Text = "razxHub v2"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 title.TextSize = 22
@@ -128,6 +128,19 @@ contentFrame.Position = UDim2.new(0, 0, 0, 40)
 contentFrame.BackgroundTransparency = 1
 contentFrame.ZIndex = 2
 
+-- BAGI 2 KOLOM
+local leftColumn = Instance.new("Frame", contentFrame)
+leftColumn.Size = UDim2.new(0.5, 0, 1, 0)
+leftColumn.Position = UDim2.new(0, 0, 0, 0)
+leftColumn.BackgroundTransparency = 1
+leftColumn.Name = "LeftCol"
+
+local rightColumn = Instance.new("Frame", contentFrame)
+rightColumn.Size = UDim2.new(0.5, 0, 1, 0)
+rightColumn.Position = UDim2.new(0.5, 0, 0, 0)
+rightColumn.BackgroundTransparency = 1
+rightColumn.Name = "RightCol"
+
 -- Fungsi Atur Minimize/Restore
 local function setMinimize(isMinimized)
     minimized = isMinimized
@@ -140,7 +153,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 520)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 350)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -153,25 +166,26 @@ end
 minBtn.MouseButton1Click:Connect(function() setMinimize(true) end)
 rLogoFrame.MouseButton1Click:Connect(function() setMinimize(false) end)
 
--- Function Create Toggle
-local function createToggle(name, yPos)
-    local container = Instance.new("Frame", contentFrame)
-    container.Size = UDim2.new(1, -20, 0, 30)
-    container.Position = UDim2.new(0, 10, 0, yPos)
+-- Function Create Toggle (Ditambah parentFrame)
+local function createToggle(name, yPos, parentFrame)
+    local container = Instance.new("Frame", parentFrame)
+    container.Size = UDim2.new(1, -10, 0, 30)
+    container.Position = UDim2.new(0, 5, 0, yPos)
     container.BackgroundTransparency = 1
 
     local label = Instance.new("TextLabel", container)
-    label.Size = UDim2.new(0, 150, 1, 0)
+    label.Size = UDim2.new(0, 100, 1, 0)
     label.Text = name
     label.TextColor3 = Color3.new(1, 1, 1)
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
-    label.TextSize = 16
+    label.TextSize = 14
+    label.TextTruncate = Enum.TextTruncate.AtEnd
 
     local toggle = Instance.new("TextButton", container)
-    toggle.Size = UDim2.new(0, 20, 0, 20)
-    toggle.Position = UDim2.new(1, -20, 0.5, -10)
+    toggle.Size = UDim2.new(0, 18, 0, 18)
+    toggle.Position = UDim2.new(1, -20, 0.5, -9)
     toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     toggle.Text = ""
     toggle.AutoButtonColor = false
@@ -188,11 +202,11 @@ local function createToggle(name, yPos)
     return toggle
 end
 
--- Function Create Slider
-local function createSlider(name, yPos, minVal, maxVal, defaultVal)
-    local container = Instance.new("Frame", contentFrame)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.Position = UDim2.new(0, 10, 0, yPos)
+-- Function Create Slider (Ditambah parentFrame)
+local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
+    local container = Instance.new("Frame", parentFrame)
+    container.Size = UDim2.new(1, -10, 0, 50)
+    container.Position = UDim2.new(0, 5, 0, yPos)
     container.BackgroundTransparency = 1
 
     local label = Instance.new("TextLabel", container)
@@ -202,7 +216,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal)
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
-    label.TextSize = 14
+    label.TextSize = 13
 
     local sliderBg = Instance.new("Frame", container)
     sliderBg.Size = UDim2.new(1, 0, 0, 8)
@@ -253,20 +267,26 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal)
     }
 end
 
--- Buat Toggles
-local noclipToggle = createToggle("Noclip", 10)
-local infJumpToggle = createToggle("Inf Jump", 50)
-local speedToggle = createToggle("Speed", 90)
-local flyToggle = createToggle("Fly", 130)
-local chibiToggle = createToggle("Avatar Chibi", 170)
-local holdToggle = createToggle("Instan Hold", 210)
-local espToggle = createToggle("ESP Player & NPC", 250)
-local jumpHighToggle = createToggle("Jump High", 290)
+-- Buat Toggles (Distribusi ke 2 Kolom)
+-- Kiri: Noclip, Inf Jump, Speed, Fly
+local noclipToggle = createToggle("Noclip", 10, leftColumn)
+local infJumpToggle = createToggle("Inf Jump", 50, leftColumn)
+local speedToggle = createToggle("Speed", 90, leftColumn)
+local flyToggle = createToggle("Fly", 130, leftColumn)
+
+-- Kanan: Chibi, Hold, ESP, Jump High
+local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
+local holdToggle = createToggle("Instan Hold", 50, rightColumn)
+local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
+local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
 -- Buat Sliders
-local speedSlider = createSlider("Speed", 330, 16, 500, 50)
-local jumpSlider = createSlider("Jump Height", 380, 0, 500, 100)
-local flySlider = createSlider("Fly Speed", 430, 10, 500, 50) 
+-- Kiri: Slider Speed di bawah toggle Speed
+local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
+
+-- Kanan: Jump Slider & Fly Slider
+local jumpSlider = createSlider("Jump H", 170, 0, 500, 100, rightColumn)
+local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn) -- Fly Slider di kiri bawah
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -367,11 +387,11 @@ local function updateESP()
         return
     end
 
-    -- 2. Cari Target (Players) - PAKAI DISPLAY NAME
+    -- 2. Cari Target (Players) - PAKAI DISPLAY NAME & HIJAU
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             if not ESP_Storage[p.Character] then
-                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau Player
+                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau
                 local t = createTag(p.Character, p.DisplayName) -- Display Name
                 ESP_Storage[p.Character] = {Highlight = h, Tag = t, Type = "Player", Name = p.DisplayName}
             end
@@ -384,7 +404,7 @@ local function updateESP()
         end
     end
 
-    -- 3. Cari Target (NPCs) - Merah
+    -- 3. Cari Target (NPCs) - MERAH
     for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") then
             local isPlayer = false
@@ -396,7 +416,7 @@ local function updateESP()
             end
             
             if not isPlayer and not ESP_Storage[obj] then
-                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah NPC
+                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah
                 local t = createTag(obj, "NPC")
                 ESP_Storage[obj] = {Highlight = h, Tag = t, Type = "NPC", Name = "NPC"}
             end
@@ -453,7 +473,7 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.MaxSlopeAngle = 89 
     else
         humanoid.WalkSpeed = 16
-        humanoid.MaxSlopeAngle = 89 -- FIX: Dari 0 jadi 89 supaya gak bug lompat
+        humanoid.MaxSlopeAngle = 89 -- FIX: 0 -> 89
     end
 
     -- Jump High Logic
