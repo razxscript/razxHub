@@ -82,7 +82,6 @@ closeBtn.ZIndex = 3
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
--- FUNGSI CLEANUP SAAT TUTUP
 closeBtn.MouseButton1Click:Connect(function()
     -- 1. Hapus ESP dulu biar bersih
     for _, data in pairs(ESP_Storage) do
@@ -287,7 +286,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     }
 end
 
--- --- PEMASANGAN UI (DIATUR POSISINYA AGAR TIDAK NYATU) --- --
+-- --- PEMASANGAN UI --- --
 
 -- KOLOM KIRI
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
@@ -307,11 +306,9 @@ local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 local tpToggle = createToggle("TP List", 170, rightColumn) 
 
 -- Slider Kanan
-local jumpSlider = createSlider("Jump H", 210, 0, 500, 100, rightColumn) -- Posisi diubah ke 210 agar tidak nyatu
+local jumpSlider = createSlider("Jump H", 210, 0, 500, 100, rightColumn)
 
--- ------------------------------------------------------ --
-
--- --- TELEPORT UI LOGIC (FIX LIST NAMA & NYATU) --- --
+-- --- TELEPORT UI LOGIC (FIX LIST TIDAK MUNCUL) --- --
 local tpMenuFrame = Instance.new("Frame", screenGui)
 tpMenuFrame.Size = UDim2.new(0, 150, 0, 250)
 tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125)
@@ -332,10 +329,6 @@ tpTitle.Font = Enum.Font.GothamBold
 tpTitle.TextSize = 14
 tpTitle.ZIndex = 11
 
-local tpListLayout = Instance.new("UIListLayout", tpMenuFrame)
-tpListLayout.Padding = UDim.new(0, 5) -- Jarak antar tombol agar gak nyatu
-tpListLayout.SortOrder = Enum.SortOrder.Name
-
 local tpScrollFrame = Instance.new("ScrollingFrame", tpMenuFrame)
 tpScrollFrame.Size = UDim2.new(1, 0, 1, -25)
 tpScrollFrame.Position = UDim2.new(0, 0, 0, 25)
@@ -344,11 +337,16 @@ tpScrollFrame.ScrollBarThickness = 4
 tpScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
 tpScrollFrame.ZIndex = 11
 
+-- PERBAIKAN PENTING: UIListLayout harus CHILD dari tpScrollFrame, bukan tpMenuFrame
+local tpListLayout = Instance.new("UIListLayout", tpScrollFrame) 
+tpListLayout.Padding = UDim.new(0, 5)
+tpListLayout.SortOrder = Enum.SortOrder.Name
+
 -- Fungsi Refresh List TP
 local function refreshTpList()
     -- Hapus tombol lama
     for _, child in pairs(tpScrollFrame:GetChildren()) do
-        if child:IsA("Frame") then -- Hapus container
+        if child:IsA("Frame") then
             child:Destroy() 
         end
     end
@@ -358,21 +356,22 @@ local function refreshTpList()
         if p ~= player then
             local btnContainer = Instance.new("Frame", tpScrollFrame)
             btnContainer.Name = p.Name
-            btnContainer.Size = UDim2.new(1, 0, 0, 30) -- Tinggi tetap
+            btnContainer.Size = UDim2.new(1, 0, 0, 30)
             btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
             btnContainer.BorderSizePixel = 0
             
             local btn = Instance.new("TextButton", btnContainer)
             btn.Size = UDim2.new(1, 0, 1, 0)
             btn.BackgroundTransparency = 1
-            btn.TextColor3 = Color3.new(1, 1, 1) -- Putih biar kelihatan
+            btn.TextColor3 = Color3.new(1, 1, 1)
             btn.Font = Enum.Font.Gotham
             btn.TextSize = 13
-            btn.Text = p.DisplayName 
+            btn.Text = p.DisplayName
             btn.TextXAlignment = Enum.TextXAlignment.Left
-            btn.TextTransparency = 0 -- Pastikan teks muncul
+            btn.TextTransparency = 0
             btn.PaddingLeft = 10
             btn.AutoButtonColor = false
+            btn.ZIndex = 12
 
             -- Hover Effect
             btn.MouseEnter:Connect(function()
@@ -392,8 +391,8 @@ local function refreshTpList()
     end
     
     -- Update CanvasSize biar bisa scroll
-    task.wait() 
-    if tpListLayout and tpListLayout.AbsoluteContentSize then
+    task.wait()
+    if tpListLayout then
         tpScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tpListLayout.AbsoluteContentSize.Y)
     end
 end
