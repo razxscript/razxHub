@@ -24,12 +24,11 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
+local spinning = false
+local spinSpeed = 0
 
 -- ESP Variables
 local ESP_Storage = {}
-
--- TP Variables
-local tpButtons = {}
 
 -- Fungsi Anti-Reset
 local function getChar()
@@ -83,20 +82,17 @@ closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
 closeBtn.MouseButton1Click:Connect(function()
-    -- 1. Hapus ESP dulu biar bersih
+    -- Hapus ESP
     for _, data in pairs(ESP_Storage) do
         if data.Highlight then data.Highlight:Destroy() end
         if data.Tag then data.Tag:Destroy() end
     end
     ESP_Storage = {}
 
-    -- 2. Putar Loop
     if _G[scriptIdentifier] then
         _G[scriptIdentifier]:Disconnect()
         _G[scriptIdentifier] = nil
     end
-    
-    -- 3. Hapus GUI
     screenGui:Destroy()
 end)
 
@@ -113,7 +109,7 @@ minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
--- Logo R (Visual)
+-- Logo R
 local rLogoFrame = Instance.new("TextButton", mainFrame)
 rLogoFrame.Size = UDim2.new(1, 0, 1, 0)
 rLogoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -167,7 +163,6 @@ local function setMinimize(isMinimized)
         contentFrame.Visible = false
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
-        tpMenuFrame.Visible = false
     else
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 380)}):Play()
         title.Visible = true
@@ -176,9 +171,6 @@ local function setMinimize(isMinimized)
         contentFrame.Visible = true
         rLogoFrame.Visible = false
         rLogoLabel.Visible = false
-        if tpToggle and tpToggle.Active then
-            tpMenuFrame.Visible = true
-        end
     end
 end
 
@@ -303,118 +295,11 @@ local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
-local tpToggle = createToggle("TP List", 170, rightColumn) 
 
--- Slider Kanan
-local jumpSlider = createSlider("Jump H", 210, 0, 500, 100, rightColumn)
+-- PENGGANTI TP: Parkour / Lompat Salto
+local parkourToggle = createToggle("Lompat Salto", 170, rightColumn) 
+local parkourSlider = createSlider("Putaran", 210, 1, 50, 10, rightColumn) 
 
--- --- TELEPORT UI LOGIC (FIX LIST TIDAK MUNCUL) --- --
-local tpMenuFrame = Instance.new("Frame", screenGui)
-tpMenuFrame.Size = UDim2.new(0, 150, 0, 250)
-tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125)
-tpMenuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-tpMenuFrame.BorderSizePixel = 1
-tpMenuFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
-tpMenuFrame.Visible = false
-tpMenuFrame.ZIndex = 10
-tpMenuFrame.Active = true
-tpMenuFrame.Draggable = true
-
-local tpTitle = Instance.new("TextLabel", tpMenuFrame)
-tpTitle.Size = UDim2.new(1, 0, 0, 25)
-tpTitle.Text = "Teleport Menu"
-tpTitle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-tpTitle.TextColor3 = Color3.new(1, 1, 1)
-tpTitle.Font = Enum.Font.GothamBold
-tpTitle.TextSize = 14
-tpTitle.ZIndex = 11
-
-local tpScrollFrame = Instance.new("ScrollingFrame", tpMenuFrame)
-tpScrollFrame.Size = UDim2.new(1, 0, 1, -25)
-tpScrollFrame.Position = UDim2.new(0, 0, 0, 25)
-tpScrollFrame.BackgroundTransparency = 1
-tpScrollFrame.ScrollBarThickness = 4
-tpScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
-tpScrollFrame.ZIndex = 11
-
--- PERBAIKAN PENTING: UIListLayout harus CHILD dari tpScrollFrame, bukan tpMenuFrame
-local tpListLayout = Instance.new("UIListLayout", tpScrollFrame) 
-tpListLayout.Padding = UDim.new(0, 5)
-tpListLayout.SortOrder = Enum.SortOrder.Name
-
--- Fungsi Refresh List TP
-local function refreshTpList()
-    -- Hapus tombol lama
-    for _, child in pairs(tpScrollFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy() 
-        end
-    end
-
-    -- Tambah tombol baru
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player then
-            local btnContainer = Instance.new("Frame", tpScrollFrame)
-            btnContainer.Name = p.Name
-            btnContainer.Size = UDim2.new(1, 0, 0, 30)
-            btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            btnContainer.BorderSizePixel = 0
-            
-            local btn = Instance.new("TextButton", btnContainer)
-            btn.Size = UDim2.new(1, 0, 1, 0)
-            btn.BackgroundTransparency = 1
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 13
-            btn.Text = p.DisplayName
-            btn.TextXAlignment = Enum.TextXAlignment.Left
-            btn.TextTransparency = 0
-            btn.PaddingLeft = 10
-            btn.AutoButtonColor = false
-            btn.ZIndex = 12
-
-            -- Hover Effect
-            btn.MouseEnter:Connect(function()
-                btnContainer.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-            end)
-            btn.MouseLeave:Connect(function()
-                btnContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            end)
-
-            -- Click Event
-            btn.MouseButton1Click:Connect(function()
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and root then
-                    root.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                end
-            end)
-        end
-    end
-    
-    -- Update CanvasSize biar bisa scroll
-    task.wait()
-    if tpListLayout then
-        tpScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tpListLayout.AbsoluteContentSize.Y)
-    end
-end
-
--- Toggle Logic TP Menu
-tpToggle.MouseButton1Click:Connect(function()
-    if tpToggle.Active then
-        tpMenuFrame.Visible = true
-        refreshTpList()
-    else
-        tpMenuFrame.Visible = false
-    end
-end)
-
--- Update List Otomatis jika ada player masuk/keluar
-Players.PlayerAdded:Connect(function()
-    if tpToggle.Active then refreshTpList() end
-end)
-
-Players.PlayerRemoving:Connect(function()
-    if tpToggle.Active then refreshTpList() end
-end)
 -- ---------------------------- --
 
 -- Logic Avatar Chibi
@@ -629,6 +514,17 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.JumpPower = jumpSlider.GetValue()
     else
         humanoid.JumpPower = 50
+    end
+
+    -- LOMPAT SALTO (PARKOUR) LOGIC
+    if parkourToggle.Active then
+        if UserInputService:IsKeyDown(Enum.KeyCode.F) then -- Tombol F untuk Salto
+            -- Ambil kecepatan putaran dari slider
+            local rotationAmount = parkourSlider.GetValue() 
+            
+            -- Putarkan RootPart
+            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(rotationAmount), 0)
+        end
     end
 
     -- Fly
