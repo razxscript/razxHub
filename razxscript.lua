@@ -24,8 +24,6 @@ local character, humanoid, root
 local flying = false
 local minimized = false
 local bodyVelocity, bodyGyro
-local spinning = false
-local spinSpeed = 0
 
 -- ESP Variables
 local ESP_Storage = {}
@@ -107,7 +105,7 @@ minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
 minBtn.ZIndex = 3
 minBtn.AutoButtonColor = false
-minBtn.Parent = mainFrame
+minBtn.Parent = mainBtn
 
 -- Logo R
 local rLogoFrame = Instance.new("TextButton", mainFrame)
@@ -296,9 +294,9 @@ local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
--- PENGGANTI TP: Parkour / Lompat Salto
-local parkourToggle = createToggle("Lompat Salto", 170, rightColumn) 
-local parkourSlider = createSlider("Putaran", 210, 1, 50, 10, rightColumn) 
+-- FITUR LOMPAT SALTO
+local saltoToggle = createToggle("Lompat Salto", 170, rightColumn) 
+local saltoSlider = createSlider("Salto Speed", 210, 10, 90, 30, rightColumn) -- Slider kecepatan putar
 
 -- ---------------------------- --
 
@@ -516,14 +514,13 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.JumpPower = 50
     end
 
-    -- LOMPAT SALTO (PARKOUR) LOGIC
-    if parkourToggle.Active then
-        if UserInputService:IsKeyDown(Enum.KeyCode.F) then -- Tombol F untuk Salto
-            -- Ambil kecepatan putaran dari slider
-            local rotationAmount = parkourSlider.GetValue() 
-            
-            -- Putarkan RootPart
-            root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(rotationAmount), 0)
+    -- LOMPAT SALTO (JUNGKIR BALIK) LOGIC
+    -- Hanya bekerja jika TIDAK sedang Fly, dan sedang Freefall (Melayang)
+    if saltoToggle.Active and not flyToggle.Active then
+        if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+            local rotSpeed = saltoSlider.GetValue() -- Ambil dari slider (10-90 derajat)
+            -- Rotasi ke depan (X Axis)
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(rotSpeed), 0, 0)
         end
     end
 
