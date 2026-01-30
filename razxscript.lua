@@ -47,10 +47,10 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame (Diperbesar sedikit menjadi 520 agar muat semua fitur)
+-- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 280, 0, 520)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -260) -- Posisi disesuaikan agar tetap di tengah
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -260)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -140,7 +140,7 @@ local function setMinimize(isMinimized)
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 520)}):Play() -- Sesuaikan restore size
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 520)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
@@ -261,11 +261,11 @@ local flyToggle = createToggle("Fly", 130)
 local chibiToggle = createToggle("Avatar Chibi", 170)
 local holdToggle = createToggle("Instan Hold", 210)
 local espToggle = createToggle("ESP Player & NPC", 250)
-local jumpHighToggle = createToggle("Jump High", 290) -- TAMBAHAN JUMP HIGH
+local jumpHighToggle = createToggle("Jump High", 290)
 
 -- Buat Sliders
 local speedSlider = createSlider("Speed", 330, 16, 500, 50)
-local jumpSlider = createSlider("Jump Height", 380, 0, 500, 100) -- TAMBAHAN SLIDER JUMP
+local jumpSlider = createSlider("Jump Height", 380, 0, 500, 100)
 local flySlider = createSlider("Fly Speed", 430, 10, 500, 50) 
 
 -- Logic Avatar Chibi
@@ -367,13 +367,13 @@ local function updateESP()
         return
     end
 
-    -- 2. Cari Target (Players)
+    -- 2. Cari Target (Players) - PAKAI DISPLAY NAME
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             if not ESP_Storage[p.Character] then
-                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau untuk Player
-                local t = createTag(p.Character, p.Name)
-                ESP_Storage[p.Character] = {Highlight = h, Tag = t, Type = "Player", Name = p.Name}
+                local h = createHighlight(p.Character, Color3.fromRGB(0, 255, 0)) -- Hijau Player
+                local t = createTag(p.Character, p.DisplayName) -- Display Name
+                ESP_Storage[p.Character] = {Highlight = h, Tag = t, Type = "Player", Name = p.DisplayName}
             end
             
             -- Update Jarak
@@ -384,7 +384,7 @@ local function updateESP()
         end
     end
 
-    -- 3. Cari Target (NPCs)
+    -- 3. Cari Target (NPCs) - Merah
     for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") then
             local isPlayer = false
@@ -396,7 +396,7 @@ local function updateESP()
             end
             
             if not isPlayer and not ESP_Storage[obj] then
-                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah untuk NPC
+                local h = createHighlight(obj, Color3.fromRGB(255, 0, 0)) -- Merah NPC
                 local t = createTag(obj, "NPC")
                 ESP_Storage[obj] = {Highlight = h, Tag = t, Type = "NPC", Name = "NPC"}
             end
@@ -447,21 +447,21 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Speed
+    -- Speed (FIX LOMPAT: Default MaxSlopeAngle diganti ke 89)
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
         humanoid.MaxSlopeAngle = 89 
     else
         humanoid.WalkSpeed = 16
-        humanoid.MaxSlopeAngle = 0
+        humanoid.MaxSlopeAngle = 89 -- FIX: Dari 0 jadi 89 supaya gak bug lompat
     end
 
-    -- Jump High Logic (BARU)
+    -- Jump High Logic
     if jumpHighToggle.Active then
-        humanoid.UseJumpPower = true -- Pastikan menggunakan JumpPower
+        humanoid.UseJumpPower = true
         humanoid.JumpPower = jumpSlider.GetValue()
     else
-        humanoid.JumpPower = 50 -- Default Roblox
+        humanoid.JumpPower = 50
     end
 
     -- Fly
