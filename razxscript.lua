@@ -28,6 +28,11 @@ local bodyVelocity, bodyGyro
 -- ESP Variables
 local ESP_Storage = {}
 
+-- ANIMASI VARIABLES
+local jumpAnimId = "rbxassetid://656117877" -- ID Backflip (Bisa diganti ID Adidas dll)
+local isPlayingAnim = false
+local animTrack
+
 -- Fungsi Anti-Reset
 local function getChar()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -75,7 +80,7 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.ZIndex = 3
+closeBtn.ZIndex = 10 -- ZIndex ditinggikan
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
@@ -103,9 +108,9 @@ minBtn.TextColor3 = Color3.new(1, 1, 1)
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
-minBtn.ZIndex = 3
+minBtn.ZIndex = 10 -- ZIndex ditinggikan
 minBtn.AutoButtonColor = false
-minBtn.Parent = mainBtn
+minBtn.Parent = mainFrame
 
 -- Logo R
 local rLogoFrame = Instance.new("TextButton", mainFrame)
@@ -294,9 +299,8 @@ local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
 
--- FITUR LOMPAT SALTO
-local saltoToggle = createToggle("Lompat Salto", 170, rightColumn) 
-local saltoSlider = createSlider("Salto Speed", 210, 10, 90, 30, rightColumn) -- Slider kecepatan putar
+-- FITUR ANIMASI LOMPAT
+local animJumpToggle = createToggle("Anim Lompat", 170, rightColumn)
 
 -- ---------------------------- --
 
@@ -497,6 +501,27 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- Animasi Lompat (Anim Override)
+    if animJumpToggle.Active then
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            if not isPlayingAnim then
+                isPlayingAnim = true
+                -- Load dan Play Animasi
+                local animInstance = Instance.new("Animation")
+                animInstance.AnimationId = jumpAnimId
+                animTrack = humanoid:LoadAnimation(animInstance)
+                animTrack:Play()
+                
+                animTrack.Stopped:Connect(function()
+                    isPlayingAnim = false
+                end)
+                
+                -- Biar tidak spam animasi
+                task.wait(0.5)
+            end
+        end
+    end
+
     -- Speed
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
@@ -512,16 +537,6 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.JumpPower = jumpSlider.GetValue()
     else
         humanoid.JumpPower = 50
-    end
-
-    -- LOMPAT SALTO (JUNGKIR BALIK) LOGIC
-    -- Hanya bekerja jika TIDAK sedang Fly, dan sedang Freefall (Melayang)
-    if saltoToggle.Active and not flyToggle.Active then
-        if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-            local rotSpeed = saltoSlider.GetValue() -- Ambil dari slider (10-90 derajat)
-            -- Rotasi ke depan (X Axis)
-            root.CFrame = root.CFrame * CFrame.Angles(math.rad(rotSpeed), 0, 0)
-        end
     end
 
     -- Fly
