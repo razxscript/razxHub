@@ -42,12 +42,18 @@ character = player.Character or player.CharacterAdded:Wait()
 humanoid = character:WaitForChild("Humanoid")
 root = character:WaitForChild("HumanoidRootPart")
 
+-- FIX 1: Reset Velocity saat start agar tidak gerak sendiri
+if root then 
+    root.Velocity = Vector3.new(0,0,0) 
+    root.RotVelocity = Vector3.new(0,0,0)
+end
+
 -- UI Setup
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame (Dikecilkan jadi 320 karena fitur dikurangi)
+-- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 320, 0, 320)
 mainFrame.Position = UDim2.new(0.5, -160, 0.5, -160)
@@ -75,7 +81,7 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.ZIndex = 10 -- ZIndex Tinggi
+closeBtn.ZIndex = 10
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = mainFrame
 
@@ -103,7 +109,7 @@ minBtn.TextColor3 = Color3.new(1, 1, 1)
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 minBtn.TextSize = 25
 minBtn.Font = Enum.Font.GothamBold
-minBtn.ZIndex = 10 -- ZIndex Tinggi
+minBtn.ZIndex = 10
 minBtn.AutoButtonColor = false
 minBtn.Parent = mainFrame
 
@@ -276,7 +282,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     }
 end
 
--- --- PEMASANGAN UI (BERSIH DARI FITUR LOMPAT ANEH) --- --
+-- --- PEMASANGAN UI --- --
 
 -- KOLOM KIRI
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
@@ -304,7 +310,7 @@ chibiToggle.MouseButton1Click:Connect(function()
         player:LoadCharacter() 
     else
         chibiToggle.Active = true
-        chibiToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        chibiToggle.BackgroundColor3 = Color3.fromRGB(0,255, 0)
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/SmilerVinix/ChibiScript/adf59dcdf5015c3fca08a897b026151ab66dcd59/CHIBIOBFUSICATED"))(true)
         end)
@@ -475,14 +481,19 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
 
     updateESP()
 
-    -- Noclip
+    -- FIX 2: Noclip Optimasi (Hanya update jika perlu)
     if noclipToggle.Active then
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
         end
     else
+        -- Hanya update kembali jika sebelumnya di Noclip
         for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
+            if part:IsA("BasePart") and not part.CanCollide then
+                part.CanCollide = true
+            end
         end
     end
 
@@ -502,8 +513,8 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.MaxSlopeAngle = 89
     end
 
-    -- Jump Power (Default, Tidak ada fitur Jump High)
-    if not flyToggle.Active then -- Pastikan Fly mati
+    -- Jump Power (Default)
+    if not flyToggle.Active then 
         humanoid.JumpPower = 50 
     end
 
