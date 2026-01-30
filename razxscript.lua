@@ -28,6 +28,9 @@ local bodyVelocity, bodyGyro
 -- ESP Variables
 local ESP_Storage = {}
 
+-- TP Variables
+local tpButtons = {}
+
 -- Fungsi Anti-Reset
 local function getChar()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -47,10 +50,10 @@ local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.ResetOnSpawn = false
 screenGui.Name = "razxHub"
 
--- Main Frame (Diperlebar untuk 2 kolom)
+-- Main Frame
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 320, 0, 350) -- Lebar 320, Tinggi 350
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -175) -- Posisi Tengah
+mainFrame.Size = UDim2.new(0, 320, 0, 380) -- Tinggi ditambah dikit untuk TP Toggle
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -152,14 +155,20 @@ local function setMinimize(isMinimized)
         contentFrame.Visible = false
         rLogoFrame.Visible = true
         rLogoLabel.Visible = true
+        -- Hide TP Menu if minimized
+        tpMenuFrame.Visible = false
     else
-        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 350)}):Play()
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 380)}):Play()
         title.Visible = true
         closeBtn.Visible = true
         minBtn.Visible = true
         contentFrame.Visible = true
         rLogoFrame.Visible = false
         rLogoLabel.Visible = false
+        -- Restore TP Menu state
+        if tpToggle and tpToggle.Active then
+            tpMenuFrame.Visible = true
+        end
     end
 end
 
@@ -267,7 +276,7 @@ local function createSlider(name, yPos, minVal, maxVal, defaultVal, parentFrame)
     }
 end
 
--- Buat Toggles (Distribusi ke 2 Kolom)
+-- Buat Toggles
 local noclipToggle = createToggle("Noclip", 10, leftColumn)
 local infJumpToggle = createToggle("Inf Jump", 50, leftColumn)
 local speedToggle = createToggle("Speed", 90, leftColumn)
@@ -277,11 +286,101 @@ local chibiToggle = createToggle("Avatar Chibi", 10, rightColumn)
 local holdToggle = createToggle("Instan Hold", 50, rightColumn)
 local espToggle = createToggle("ESP Player & NPC", 90, rightColumn)
 local jumpHighToggle = createToggle("Jump High", 130, rightColumn)
+local tpToggle = createToggle("TP List", 170, rightColumn) -- Toggle TP Menu
 
 -- Buat Sliders
 local speedSlider = createSlider("Speed Val", 170, 16, 500, 50, leftColumn)
 local jumpSlider = createSlider("Jump H", 170, 0, 500, 100, rightColumn)
 local flySlider = createSlider("Fly Speed", 230, 10, 500, 50, leftColumn)
+
+-- --- TELEPORT UI LOGIC --- --
+local tpMenuFrame = Instance.new("Frame", screenGui)
+tpMenuFrame.Size = UDim2.new(0, 150, 0, 250)
+tpMenuFrame.Position = UDim2.new(0.5, 170, 0.5, -125) -- Di kanan main menu
+tpMenuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+tpMenuFrame.BorderSizePixel = 1
+tpMenuFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+tpMenuFrame.Visible = false
+tpMenuFrame.ZIndex = 10
+tpMenuFrame.Active = true
+tpMenuFrame.Draggable = true
+
+local tpTitle = Instance.new("TextLabel", tpMenuFrame)
+tpTitle.Size = UDim2.new(1, 0, 0, 25)
+tpTitle.Text = "Teleport Menu"
+tpTitle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+tpTitle.TextColor3 = Color3.new(1, 1, 1)
+tpTitle.Font = Enum.Font.GothamBold
+tpTitle.TextSize = 14
+tpTitle.ZIndex = 11
+
+local tpListLayout = Instance.new("UIListLayout", tpMenuFrame)
+tpListLayout.Padding = UDim.new(0, 2)
+tpListLayout.SortOrder = Enum.SortOrder.Name
+
+local tpScrollFrame = Instance.new("ScrollingFrame", tpMenuFrame)
+tpScrollFrame.Size = UDim2.new(1, 0, 1, -25)
+tpScrollFrame.Position = UDim2.new(0, 0, 0, 25)
+tpScrollFrame.BackgroundTransparency = 1
+tpScrollFrame.ScrollBarThickness = 4
+tpScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+tpScrollFrame.ZIndex = 11
+
+-- Fungsi Refresh List TP
+local function refreshTpList()
+    -- Hapus tombol lama
+    for _, btn in pairs(tpScrollFrame:GetChildren()) do
+        if btn:IsA("TextButton") then btn:Destroy() end
+    end
+
+    -- Tambah tombol baru
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            local btn = Instance.new("TextButton", tpScrollFrame)
+            btn.Size = UDim2.new(1, -4, 0, 25)
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 13
+            btn.Text = p.Name
+            btn.AutoButtonColor = false
+
+            btn.MouseButton1Click:Connect(function()
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    root.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                end
+            end)
+            
+            btn.MouseEnter:Connect(function()
+                btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+            end)
+            
+            btn.MouseLeave:Connect(function()
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            end)
+        end
+    end
+end
+
+-- Toggle Logic TP Menu
+tpToggle.MouseButton1Click:Connect(function()
+    if tpToggle.Active then
+        tpMenuFrame.Visible = true
+        refreshTpList()
+    else
+        tpMenuFrame.Visible = false
+    end
+end)
+
+-- Update List Otomatis jika ada player masuk/keluar
+Players.PlayerAdded:Connect(function()
+    if tpToggle.Active then refreshTpList() end
+end)
+
+Players.PlayerRemoving:Connect(function()
+    if tpToggle.Active then refreshTpList() end
+end)
+-- ---------------------------- --
 
 -- Logic Avatar Chibi
 chibiToggle.MouseButton1Click:Connect(function()
@@ -369,10 +468,8 @@ local function createTag(head, text)
     return billboard
 end
 
--- PERBAIKAN ESP UPDATE
 local function updateESP()
     if not espToggle.Active then
-        -- Clear logic
         for _, data in pairs(ESP_Storage) do
             if data.Highlight then data.Highlight:Destroy() end
             if data.Tag then data.Tag:Destroy() end
@@ -381,12 +478,11 @@ local function updateESP()
         return
     end
 
-    -- 1. Update Players (FIX: Head Loading & New Player)
+    -- 1. Update Players
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local char = p.Character
             
-            -- Init Storage
             if not ESP_Storage[char] then
                 ESP_Storage[char] = {
                     Highlight = createHighlight(char, Color3.fromRGB(0, 255, 0)), -- Hijau
@@ -396,7 +492,6 @@ local function updateESP()
                 }
             end
 
-            -- Try to create Tag if Head is missing (Loading check)
             if not ESP_Storage[char].Tag then
                 local head = char:FindFirstChild("Head")
                 if head then
@@ -404,7 +499,6 @@ local function updateESP()
                 end
             end
 
-            -- Update Distance & Text
             if ESP_Storage[char].Tag then
                 local dist = math.floor((root.Position - char.HumanoidRootPart.Position).Magnitude)
                 ESP_Storage[char].Tag.TextLabel.Text = ESP_Storage[char].Name .. " ["..dist.."m]"
@@ -412,15 +506,9 @@ local function updateESP()
         end
     end
 
-    -- 2. Update NPCs (FIX: Head Loading)
-    for _, obj in pairs(Workspace:GetDescendants()) do -- Pindah ke GetDescendants untuk lebih akurat, atau GetChildren jika ingin performa
-        -- Kita pakai GetChildren() Workspace agar tidak lag scan seluruh descendants
-    end
-    
-    -- Kita stick ke GetChildren Workspace untuk performa tapi logicnya diperbaiki
+    -- 2. Update NPCs
     for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and obj ~= character and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-            -- Cek apakah ini Player (Double check)
             local isPlayer = false
             for _, p in pairs(Players:GetPlayers()) do
                 if p.Character == obj then
@@ -439,7 +527,6 @@ local function updateESP()
                     }
                 end
 
-                -- NPC Tag Loading
                 if not ESP_Storage[obj].Tag then
                     local head = obj:FindFirstChild("Head")
                     if head then
@@ -458,7 +545,7 @@ local function updateESP()
         end
     end
 
-    -- 3. Cleanup Dead/Removed
+    -- 3. Cleanup
     for char, data in pairs(ESP_Storage) do
         if not char or not char.Parent then
             if data.Highlight then data.Highlight:Destroy() end
@@ -472,7 +559,6 @@ end
 _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
     if not character or not humanoid or not root then return end
 
-    -- Jalankan Update ESP
     updateESP()
 
     -- Noclip
@@ -493,7 +579,7 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Speed (FIX LOMPAT: Default MaxSlopeAngle diganti ke 89)
+    -- Speed
     if speedToggle.Active then
         humanoid.WalkSpeed = speedSlider.GetValue()
         humanoid.MaxSlopeAngle = 89 
@@ -502,7 +588,7 @@ _G[scriptIdentifier] = RunService.RenderStepped:Connect(function()
         humanoid.MaxSlopeAngle = 89
     end
 
-    -- Jump High Logic
+    -- Jump High
     if jumpHighToggle.Active then
         humanoid.UseJumpPower = true
         humanoid.JumpPower = jumpSlider.GetValue()
